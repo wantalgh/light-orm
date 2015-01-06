@@ -17,7 +17,7 @@ namespace WT.Data.DbExtension
         /// <param name="tableName">要操作的数据表架构</param>
         /// <param name="columns">要查询的列</param>
         /// <param name="keyColumnDic">查询键与数据列的对应字典</param>
-        /// <param name="skip">要跳过的数据行数。(-1表示不采用此机制)</param>
+        /// <param name="skip">要跳过的数据行数。</param>
         /// <param name="take">要取的数据行数</param>
         /// <returns>生成的SQL语句</returns>
         string BuildSelectSql(string tableName, IEnumerable<string> columns, IEnumerable<KeyValuePair<string, string>> keyColumnDic, int? skip = null, int? take = null);

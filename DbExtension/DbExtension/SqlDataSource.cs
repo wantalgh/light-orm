@@ -166,7 +166,7 @@ namespace WT.Data.DbExtension
         /// </summary>
         /// <typeparam name="T">结果集的元素类型</typeparam>
         /// <param name="sql">要执行的SQL，数据列名与模型属性名不一致时，使用AS语句调整。此参数为null时按模型表名与属性名自动拼装简单SELECT语句。</param>
-        /// <param name="skip">要跳过的数据行数。(-1表示不采用此机制)</param>
+        /// <param name="skip">要跳过的数据行数。</param>
         /// <param name="take">要取的数据行数</param>
         /// <param name="tableName">如果自动拼装SQL，SELECT的表名，如果此参数为null，则使用T类型名作为表名</param>
         /// <param name="parameter">SQL参数</param>
