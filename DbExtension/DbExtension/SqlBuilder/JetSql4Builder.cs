@@ -12,7 +12,7 @@ namespace WT.Data.DbExtension
     /// </summary>
     class JetSql4Builder : ISqlBuilder
     {
-        public string BuildSelectSql(string tableName, IEnumerable<string> columns, IEnumerable<KeyValuePair<string, string>> keyColumnDic, int? skip = null, int? take = null)
+        public string BuildSelectSql(string tableName, IEnumerable<string> columns, IEnumerable<KeyValuePair<string, string>> keyColumnDic)
         {
             throw new NotImplementedException();
         }
@@ -33,6 +33,12 @@ namespace WT.Data.DbExtension
         }
 
         public string BuildMergeSql(string tableName, IEnumerable<KeyValuePair<string, string>> parameterColumnDic, IEnumerable<KeyValuePair<string, string>> keyColumnDic)
+        {
+            throw new NotImplementedException();
+        }
+
+
+        public string DecoratePageSelectSql(string selectSql, int skip, int take)
         {
             throw new NotImplementedException();
         }

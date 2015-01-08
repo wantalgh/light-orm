@@ -13,7 +13,7 @@ namespace WT.Data.DbExtension
     /// </summary>
     class Tsql2005Builder: ISqlBuilder
     {
-        public string BuildSelectSql(string tableName, IEnumerable<string> columns, IEnumerable<KeyValuePair<string, string>> keyColumnDic, int? skip = null, int? take = null)
+        public string BuildSelectSql(string tableName, IEnumerable<string> columns, IEnumerable<KeyValuePair<string, string>> keyColumnDic)
         {
             var sqlBuilder = new StringBuilder();
             sqlBuilder.Append(" SELECT ");
@@ -31,11 +31,13 @@ namespace WT.Data.DbExtension
             }
 
             var sql = sqlBuilder.ToString();
-            if (skip != null && take != null)
-            {
-                sql = PageQueryHelper.BuildQuerySql(sql, skip.Value, take.Value, tableName);
-            }
+            return sql;
+        }
 
+
+        public string DecoratePageSelectSql(string selectSql, int skip, int take)
+        {
+            var sql = PageQueryHelper.BuildQuerySql(selectSql, skip, take);
             return sql;
         }
 
@@ -142,11 +144,12 @@ namespace WT.Data.DbExtension
             const string SqlTemplate = " SELECT * FROM (SELECT *, ROW_NUMBER() OVER(ORDER BY (SELECT 0)) AS [{2}] FROM ({0}) AS [{1}]) AS [{1}] WHERE [{2}] BETWEEN {3} AND {4}";
             private static readonly Regex CheckSelectRgx = new Regex(@"^ *SELECT +?TOP.*", RegexOptions.Compiled | RegexOptions.IgnoreCase);
             private static readonly Regex ReplaceSelectRgx = new Regex(@"^ *SELECT(?=.*)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            private static readonly Regex CheckTableNameRgx = new Regex(@"^ *SELECT +.*? +FROM +(?<TableName>[^ ]*) *.*", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
             /// <summary>
             /// 构建分页查询的SQL语句
             /// </summary>
-            public static string BuildQuerySql(string sql, int skipRows, int takeRows, string pageTableName = "PagedDataTable", string numRowName = "rownum")
+            public static string BuildQuerySql(string sql, int skipRows, int takeRows, string numRowName = "rownum")
             {
                 var startRows = skipRows + 1;
                 var endRows = skipRows + takeRows;
@@ -159,7 +162,11 @@ namespace WT.Data.DbExtension
                 {
                     endRows = int.MaxValue;
                 }
-                var querySql = string.Format(SqlTemplate, sql, pageTableName, numRowName, startRows.ToString(CultureInfo.InvariantCulture), endRows.ToString(CultureInfo.InvariantCulture));
+
+                var tableNameMatch = CheckTableNameRgx.Match(sql);
+                var tableName = tableNameMatch.Groups["TableName"].Value;
+                tableName = tableName.TrimStart('[').TrimEnd(']');
+                var querySql = string.Format(SqlTemplate, sql, tableName, numRowName, startRows.ToString(CultureInfo.InvariantCulture), endRows.ToString(CultureInfo.InvariantCulture));
                 return querySql;
             }
         }

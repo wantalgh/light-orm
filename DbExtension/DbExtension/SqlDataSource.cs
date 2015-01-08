@@ -185,7 +185,11 @@ namespace WT.Data.DbExtension
                 }
                 var columns = ReflectHelper.GetProperties(type).Select(p => p.Name);
                 var keyColumnDic = GetKeyColumnDic(parameter);
-                sql = SqlBuilderFactory.GetBuilder(_autoSqlType).BuildSelectSql(tableName, columns, keyColumnDic, skip, take);
+                sql = SqlBuilderFactory.GetBuilder(_autoSqlType).BuildSelectSql(tableName, columns, keyColumnDic);
+                if (skip != null && take != null)
+                {
+                    sql = SqlBuilderFactory.GetBuilder(_autoSqlType).DecoratePageSelectSql(sql, skip.Value, take.Value);
+                }
             }
 
             IEnumerable<T> result;
@@ -265,11 +269,19 @@ namespace WT.Data.DbExtension
         /// </summary>
         /// <param name="sql">要执行的SQL</param>
         /// <param name="parameter">SQL参数</param>
+        /// <param name="skip">要跳过的数据行数。</param>
+        /// <param name="take">要取的数据行数</param>
         /// <param name="commandType">SQL命令类型</param>
         /// <returns>返回的数据集</returns>
-        public DataSet ExecuteDataSet(string sql, object parameter = null, CommandType commandType = CommandType.Text)
+        public DataSet ExecuteDataSet(string sql, object parameter = null, int? skip = null, int? take = null, CommandType commandType = CommandType.Text)
         {
             var dataSet = new DataSet();
+
+            if (skip != null && take != null)
+            {
+                sql = SqlBuilderFactory.GetBuilder(_autoSqlType).DecoratePageSelectSql(sql, skip.Value, take.Value);
+            }
+
             using (var connection = GetConnection())
             {
                 connection.Open();
