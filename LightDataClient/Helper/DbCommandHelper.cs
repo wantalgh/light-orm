@@ -111,14 +111,22 @@ namespace Wantalgh.LightDataClient
             while (reader.Read())
             {
                 var obj = new T();
-                foreach (var propertyId in propertyColumnMap)
+                foreach (var propertyId in propertyColumnMap.ToArray())
                 {
-                    var property = propertyId.Key;
-                    var id = propertyId.Value;
-                    var dbValue = reader.GetValue(id);
-                    var value = dbValue == DBNull.Value ? null : dbValue;
-                    property.SetValue(obj, value);
+                    try
+                    {
+                        var property = propertyId.Key;
+                        var id = propertyId.Value;
+                        var dbValue = reader.GetValue(id);
+                        var value = dbValue == DBNull.Value ? null : dbValue;
+                        property.SetValue(obj, value);
+                    }
+                    catch (IndexOutOfRangeException)
+                    {
+                        propertyColumnMap.Remove(propertyId.Key);
+                    }
                 }
+
                 yield return obj;
             }
         }

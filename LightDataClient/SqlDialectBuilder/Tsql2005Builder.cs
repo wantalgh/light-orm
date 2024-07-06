@@ -142,7 +142,7 @@ namespace Wantalgh.LightDataClient.SqlDialectBuilder
         /// <summary>
         /// 获取参数名称
         /// </summary>
-        public static string GetParamName(string param)
+        private static string GetParamName(string param)
         {
             return $"@{param}";
         }
