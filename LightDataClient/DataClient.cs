@@ -10,13 +10,24 @@ using Wantalgh.LightDataClient.SqlDialectBuilder;
 
 namespace Wantalgh.LightDataClient
 {
+    /// <summary>
+    /// A light-weight and easy-to-use SQL data client.
+    /// </summary>
     public class DataClient
     {
         private readonly ISqlDialectBuilder _dialectBuilder;
 
         private readonly Func<IDbConnection> _connectionFactory;
 
-
+        /// <summary>
+        /// Creates a new instance of the <see cref="DataClient"/> class.
+        /// </summary>
+        /// <param name="connectionFactory">
+        /// The connection factory. This client will retrieve connection from this factory.
+        /// </param>
+        /// <param name="dialectBuilder">
+        /// The sql dialect builder. If null, <see cref="Tsql2005Builder"/> will be used.
+        /// </param>
         public DataClient(Func<IDbConnection> connectionFactory, ISqlDialectBuilder dialectBuilder = null)
         {
             _connectionFactory = connectionFactory;
@@ -24,17 +35,39 @@ namespace Wantalgh.LightDataClient
         }
 
         /// <summary>
-        /// 执行一条SQL，返回一批执行结果。(自动拼装SQL会有些许性能损耗，且只拼装简单的相等AND查询条件，如果对性能要求高或使用复杂查询条件，请手写要执行的SQL。)
+        /// Executes SQL and returns a list of T.
+        /// This method can execute specified or generated SQL, then automatically map column names to property names.
         /// </summary>
-        /// <typeparam name="T">结果集的元素类型</typeparam>
-        /// <param name="sql">要执行的SQL，数据列名与模型属性名不一致时，使用AS语句调整。此参数为null时按模型表名与属性名自动拼装简单SELECT语句。</param>
-        /// <param name="skip">要跳过的数据行数。(-1表示不采用此机制)</param>
-        /// <param name="take">要取的数据行数</param>
-        /// <param name="tableName">如果自动拼装SQL，SELECT的表名，如果此参数为null，则使用T类型名作为表名</param>
-        /// <param name="parameter">SQL参数</param>
-        /// <param name="commandType">命令类型</param>
-        /// <param name="commandBehavior">执行方式</param>
-        /// <returns>结果的强类型可遍历集。</returns>
+        /// <typeparam name="T">
+        /// Item type of the result list. 
+        /// Each row of the SQL result will be mapped to an instance of T, columns will be mapped to properties of T with the same name by default.
+        /// When generating SQL, T's type name will be used as table name, and each property's name will be used as column name by default.
+        /// </typeparam>
+        /// <param name="sql">
+        /// SQL to be executed. If null, this method will automatically generate SELECT SQL.
+        /// </param>
+        /// <param name="tableName">
+        /// When generating SQL, this parameter will be used as table name. If null, T's type name will be used.
+        /// </param>
+        /// <param name="parameter">
+        /// When generating SQL, this parameter will be used to generate sql query parameters.
+        /// This parameter is an object whose properties will be used to generate query parameters of the same name.
+        /// </param>
+        /// <param name="skip">
+        /// When generating SQL, if specified, this parameter will be used to skip specified number of rows.
+        /// </param>
+        /// <param name="take">
+        /// When generating SQL, if specified, this parameter will be used to limit specified number of rows.
+        /// </param>
+        /// <param name="commandType">
+        /// The type of sql to execute, if null, CommandType.Text will be used. For details, <see cref="CommandType"/>.
+        /// </param>
+        /// <param name="commandBehavior">
+        /// The behavior of executing sql, if null, CommandBehavior.Default will be used. For details, <see cref="CommandBehavior"/>
+        /// </param>
+        /// <returns>
+        /// Sql query result, automatically mapped to IEnumerable of T
+        /// </returns>
         public IEnumerable<T> ExecuteModels<T>(string sql = null, object parameter = null, string tableName = null, int? skip = null, int? take = null, CommandType commandType = CommandType.Text, CommandBehavior commandBehavior = CommandBehavior.Default)
             where T : new()
         {
@@ -64,15 +97,33 @@ namespace Wantalgh.LightDataClient
         }
 
         /// <summary>
-        /// 执行一条SQL，返回一批执行结果的第一项，如果。(自动拼装SQL会有些许性能损耗，且只拼装简单的相等AND查询条件，如果对性能要求高或使用复杂查询条件，请手写要执行的SQL。)
+        /// Executes SQL and returns the first row.
+        /// Equivalent to ExecuteModels method, but only get the first row, other rows will be ignored. />
         /// </summary>
-        /// <typeparam name="T">结果集的元素类型</typeparam>
-        /// <param name="sql">要执行的SQL，数据列名与模型属性名不一致时，使用AS语句调整。此参数为null时按模型表名与属性名自动拼装简单SELECT语句。</param>
-        /// <param name="tableName">如果自动拼装SQL，SELECT的表名，如果此参数为null，则使用T类型名作为表名</param>
-        /// <param name="parameter">SQL参数</param>
-        /// <param name="commandType">命令类型</param>
-        /// <param name="commandBehavior">执行方式</param>
-        /// <returns>结果的强类型。</returns>
+        /// <typeparam name="T">
+        /// Item type of the result list. 
+        /// Each row of the SQL result will be mapped to an instance of T, columns will be mapped to properties of T with the same name by default.
+        /// When generating SQL, T's type name will be used as table name, and each property's name will be used as column name by default.
+        /// </typeparam>
+        /// <param name="sql">
+        /// SQL to be executed. If null, this method will automatically generate SELECT SQL.
+        /// </param>
+        /// <param name="tableName">
+        /// When generating SQL, this parameter will be used as table name. If null, T's type name will be used.
+        /// </param>
+        /// <param name="parameter">
+        /// When generating SQL, this parameter will be used to generate sql query parameters.
+        /// This parameter is an object whose properties will be used to generate query parameters of the same name.
+        /// </param>
+        /// <param name="commandType">
+        /// The type of sql to execute, if null, CommandType.Text will be used. For details, <see cref="CommandType"/>.
+        /// </param>
+        /// <param name="commandBehavior">
+        /// The behavior of executing sql, if null, CommandBehavior.Default will be used. For details, <see cref="CommandBehavior"/>
+        /// </param>
+        /// <returns>
+        /// First row of result, automatically mapped to T
+        /// </returns>
         public T ExecuteModel<T>(string sql = null, object parameter = null, string tableName = null, CommandType commandType = CommandType.Text, CommandBehavior commandBehavior = CommandBehavior.Default)
             where T : new()
         {
@@ -82,13 +133,24 @@ namespace Wantalgh.LightDataClient
         }
 
         /// <summary>
-        /// 执行一条SQL，返回执行结果的第一列第一行
+        /// Executes SQL and returns the first single value of the result.
         /// </summary>
-        /// <typeparam name="T">返回结果的类型，通常为int、string、DateTime、Guid等。</typeparam>
-        /// <param name="sql">SQL语句</param>
-        /// <param name="parameter">SQL参数</param>
-        /// <param name="commandType">SQL语句的类型</param>
-        /// <returns>执行结果第一列第一行的强类型</returns>
+        /// <typeparam name="T">
+        /// Value type of the result.
+        /// </typeparam>
+        /// <param name="sql">
+        /// SQL to be executed. 
+        /// </param>
+        /// <param name="parameter">
+        /// This parameter will be used to generate sql query parameters.
+        /// This parameter is an object whose properties will be used to generate query parameters of the same name.
+        /// </param>
+        /// <param name="commandType">
+        /// The type of sql command, if null, CommandType.Text will be used. For details, <see cref="CommandType"/>.
+        /// </param>
+        /// <returns>
+        /// The first single value of the result
+        /// </returns>
         public T ExecuteObject<T>(string sql, object parameter = null, CommandType commandType = CommandType.Text)
         {
             T result;
@@ -104,12 +166,21 @@ namespace Wantalgh.LightDataClient
         }
 
         /// <summary>
-        /// 执行一条不返回任何结果的SQL语句
+        /// Executes SQL and returns the number of rows affected.
         /// </summary>
-        /// <param name="sql">SQL语句</param>
-        /// <param name="parameter">SQL参数</param>
-        /// <param name="commandType">SQL语句的类型</param>
-        /// <returns>执行SQL影响的行数</returns>
+        /// <param name="sql">
+        /// SQL to be executed. 
+        /// </param>
+        /// <param name="parameter">
+        /// This parameter will be used to generate sql query parameters.
+        /// This parameter is an object whose properties will be used to generate query parameters of the same name.
+        /// </param>
+        /// <param name="commandType">
+        /// The type of sql to execute, if null, CommandType.Text will be used. For details, <see cref="CommandType"/>.
+        /// </param>
+        /// <returns>
+        /// The number of rows affected
+        /// </returns>
         public int ExecuteNone(string sql, object parameter = null, CommandType commandType = CommandType.Text)
         {
             int result;
@@ -125,12 +196,21 @@ namespace Wantalgh.LightDataClient
         }
 
         /// <summary>
-        /// 执行SQL，获取数据表
+        /// Executes SQL and returns a <see cref="DataTable"/>.
         /// </summary>
-        /// <param name="sql">要执行的SQL</param>
-        /// <param name="parameter">SQL参数</param>
-        /// <param name="commandType">SQL命令类型</param>
-        /// <returns>返回的数据集</returns>
+        /// <param name="sql">
+        /// SQL to be executed. 
+        /// </param>
+        /// <param name="parameter">
+        /// This parameter will be used to generate sql query parameters.
+        /// This parameter is an object whose properties will be used to generate query parameters of the same name.
+        /// </param>
+        /// <param name="commandType">
+        /// The type of sql to execute, if null, CommandType.Text will be used. For details, <see cref="CommandType"/>.
+        /// </param>
+        /// <returns>
+        /// DataTable of sql query result.
+        /// </returns>
         public DataTable ExecuteTable(string sql, object parameter = null, CommandType commandType = CommandType.Text)
         {
             var dataTable = new DataTable();
@@ -147,12 +227,22 @@ namespace Wantalgh.LightDataClient
 
 
         /// <summary>
-        /// 自动在数据库中插入一个实体模型。(如果此方法的自动简单Insert操作不能满足需要，可以使用ExecuteNone方法执行手动编写的Insert语句)
+        /// Insert a row into data table using the automatic mapping logic.
         /// </summary>
-        /// <typeparam name="T">实体类型</typeparam>
-        /// <param name="model">实体</param>
-        /// <param name="tableName">数据表名(如果为空则使用数据模型的类型名)</param>
-        /// <returns>操作结果。</returns>
+        /// <typeparam name="T">
+        /// Type of inserted model.
+        /// T's type name will be used to generate INSERT SQL table name by default.
+        /// T's properties names will be used to generate INSERT SQL column and query parameter names by default.
+        /// </typeparam>
+        /// <param name="model">
+        /// Row model to be inserted, properties' value will be inserted into the columns with same name by default.
+        /// </param>
+        /// <param name="tableName">
+        /// If the name of the data table is inconsistent with the type name of the model, you can specify the table name here.
+        /// </param>
+        /// <returns>
+        /// The number of rows affected.
+        /// </returns>
         public int InsertModel<T>(T model, string tableName = null)
         {
             var modelType = typeof(T);
@@ -168,13 +258,26 @@ namespace Wantalgh.LightDataClient
         }
 
         /// <summary>
-        /// 自动更新数据库的一个实体模型。(如果此方法的自动简单Update操作不能满足需要，可以使用ExecuteNone方法执行手动编写的Update语句)
+        /// Update a row of data table using the automatic mapping logic.
         /// </summary>
-        /// <typeparam name="T">实体类型</typeparam>
-        /// <param name="model">实体</param>
-        /// <param name="condition">数据的键</param>
-        /// <param name="tableName">数据表名(如果为空则使用数据模型的类型名)</param>
-        /// <returns>是否更新成功。</returns>
+        /// <typeparam name="T">
+        /// Type of updated model.
+        /// T's type name will be used to generate UPDATE SQL table name by default.
+        /// T's properties names will be used to generate UPDATE SQL column and query parameter names by default.
+        /// </typeparam>
+        /// <param name="model">
+        /// Row model to be updated, properties' value will be updated to the columns with same name by default.
+        /// </param>
+        /// <param name="condition">
+        /// Condition is an object whose properties will be used to generate WHERE clause of UPDATE SQL.
+        /// Setting the condition to null will generate an UPDATE SQL without WHERE clause.
+        /// </param>
+        /// <param name="tableName">
+        /// If the name of the data table is inconsistent with the type name of the model, you can specify the table name here.
+        /// </param>
+        /// <returns>
+        /// The number of rows affected.
+        /// </returns>
         public int UpdateModel<T>(T model, object condition, string tableName = null)
         {
             var modelType = typeof(T);
@@ -205,13 +308,25 @@ namespace Wantalgh.LightDataClient
 
 
         /// <summary>
-        /// 如果不存在指定的实体就执行Insert操作，如果存在就Update。(如果此方法的自动简单InsertOrUpdate操作不能满足需要，可以使用ExecuteNone方法执行手动编写的InsertOrUpdate语句)
+        /// Insert or update a row of data table using the automatic mapping logic.
         /// </summary>
-        /// <typeparam name="T">实体的类型</typeparam>
-        /// <param name="model">实体</param>
-        /// <param name="condition">实体的键</param>
-        /// <param name="tableName">实体所在的表名</param>
-        /// <returns>是否操作成功</returns>
+        /// <typeparam name="T">
+        /// Type of model.
+        /// T's type name will be used to generate InsertOrUpdate SQL table name by default.
+        /// T's properties names will be used to generate InsertOrUpdate SQL column and query parameter names by default.
+        /// </typeparam>
+        /// <param name="model">
+        /// Row model to be operated, properties' value will be mapped to the columns with same name by default.
+        /// </param>
+        /// <param name="condition">
+        /// Condition is an object whose properties will be used to generate WHERE clause of SQL.
+        /// </param>
+        /// <param name="tableName">
+        /// If the name of the data table is inconsistent with the type name of the model, you can specify the table name here.
+        /// </param>
+        /// <returns>
+        /// The number of rows affected.
+        /// </returns>
         public int InsertOrUpdateModel<T>(T model, object condition, string tableName = null)
         {
             var modelType = typeof(T);
@@ -243,10 +358,15 @@ namespace Wantalgh.LightDataClient
 
 
         /// <summary>
-        /// 自动化删除数据库中的模型。(如果此方法的自动简单DELETE操作不能满足需要，可以使用ExecuteNone方法执行手动编写的DELETE语句)
+        /// Delete rows using the automatically generated SQL.
         /// </summary>
-        /// <param name="tableName">被删除模型所在的表名</param>
-        /// <param name="condition">删除条件(只支持简单的相等AND查询条件，使用复杂条件删除模型请使用ExecuteNone方法)</param>
+        /// <param name="tableName">
+        /// Table name of automatically generated DELETE SQL.
+        /// </param>
+        /// <param name="condition">
+        /// Condition is an object whose properties will be used to generate WHERE clause of DELETE SQL.
+        /// Setting the condition to null will generate a DELETE SQL without WHERE clause.
+        /// </param>
         /// <returns>是否删除成功。</returns>
         public int DeleteModel(string tableName, object condition)
         {
@@ -257,7 +377,7 @@ namespace Wantalgh.LightDataClient
         }
 
         /// <summary>
-        /// 获取某个模型的原始属性名与数据列对应词典
+        /// Builds a dictionary of column and parameter mapping based on the type of the model.
         /// </summary>
         private static Dictionary<string, string> GetTypeParameterDic(Type modelType, string namePrefix = "")
         {
@@ -268,7 +388,7 @@ namespace Wantalgh.LightDataClient
 
 
         /// <summary>
-        /// 获取某列与其查询参数的对应字典
+        /// Builds a dictionary of column and parameter mapping based on the condition object.
         /// </summary>
         private static Dictionary<string, string> GetObjectParameterDic(object condition, string namePrefix = "")
         {
@@ -282,7 +402,7 @@ namespace Wantalgh.LightDataClient
         }
 
         /// <summary>
-        /// 组建一个DbCommand对象
+        /// Builds a command object.
         /// </summary>
         private static IDbCommand BuildCommand(IDbConnection conn, string sqlText, CommandType commandType = CommandType.Text, object parameter = null)
         {

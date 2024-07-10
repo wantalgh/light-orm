@@ -1,4 +1,6 @@
-﻿using System;
+﻿// SPDX-License-Identifier: MIT
+
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -55,7 +57,7 @@ namespace Wantalgh.LightDataClient
 
 
         /// <summary>
-        /// 组建查询参数
+        /// Add object parameters to command
         /// </summary>
         public static void AddParameters(this IDbCommand command, object parameterObj, string namePrefix = "")
         {
@@ -81,12 +83,21 @@ namespace Wantalgh.LightDataClient
         }
 
         /// <summary>
-        /// 执行SQL，把结果映射到对象上。
+        /// Executes a db command and map result to enumerable of T.
         /// </summary>
-        /// <typeparam name="T">对象的类型，类型的属性名应与SQL返回的列名一致。</typeparam>
-        /// <param name="command">被扩展调用的DbCommand对象</param>
-        /// <param name="behavior">执行命令的行为参数</param>
-        /// <returns>返回结果</returns>
+        /// <typeparam name="T">
+        /// The type of the result list.
+        /// Each row in the result is mapped to an instance of T, values of columns are mapped to properties of T with same name.
+        /// </typeparam>
+        /// <param name="command">
+        /// DbCommand which contains sql and parameters.
+        /// </param>
+        /// <param name="behavior">
+        /// The behavior of executing sql, if null, CommandBehavior.Default will be used. For details, <see cref="CommandBehavior"/>
+        /// </param>
+        /// <returns>
+        /// Result of command, each row is mapped to an instance of T.
+        /// </returns>
         public static IEnumerable<T> ExecuteObjects<T>(this IDbCommand command, CommandBehavior behavior = CommandBehavior.Default)
             where T : new()
         {
@@ -132,7 +143,7 @@ namespace Wantalgh.LightDataClient
         }
 
         /// <summary>
-        /// 查询返回结果的第一行和第一列
+        /// Executes a db command and returns a single value.
         /// </summary>
         public static T ExecuteObject<T>(this IDbCommand command)
         {
