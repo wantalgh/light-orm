@@ -104,51 +104,89 @@ namespace Wantalgh.LightDataClient
             var tType = typeof(T);
             var properties = ReflectHelper.GetProperties(tType);
 
-            var reader = command.ExecuteReader(behavior);
-
-            var propertyColumnMap = new Dictionary<PropertyInfo, int>();
-            foreach (var property in properties.Where(p => p.CanWrite))
+            using (var reader = command.ExecuteReader(behavior))
             {
-                try
-                {
-                    var id = reader.GetOrdinal(property.Name);
-                    propertyColumnMap.Add(property, id);
-                }
-                catch (IndexOutOfRangeException)
-                {
-                }
-            }
-
-            while (reader.Read())
-            {
-                var obj = new T();
-                foreach (var propertyId in propertyColumnMap.ToArray())
+                var propertyColumnMap = new Dictionary<PropertyInfo, int>();
+                foreach (var property in properties.Where(p => p.CanWrite))
                 {
                     try
                     {
-                        var property = propertyId.Key;
-                        var id = propertyId.Value;
-                        var dbValue = reader.GetValue(id);
-                        var value = dbValue == DBNull.Value ? null : dbValue;
-                        property.SetValue(obj, value);
+                        var id = reader.GetOrdinal(property.Name);
+                        propertyColumnMap.Add(property, id);
                     }
                     catch (IndexOutOfRangeException)
                     {
-                        propertyColumnMap.Remove(propertyId.Key);
                     }
                 }
 
-                yield return obj;
+                while (reader.Read())
+                {
+                    var obj = new T();
+                    foreach (var propertyId in propertyColumnMap.ToArray())
+                    {
+                        try
+                        {
+                            var property = propertyId.Key;
+                            var id = propertyId.Value;
+                            var dbValue = reader.GetValue(id);
+                            var value = dbValue == DBNull.Value ? null : dbValue;
+                            property.SetValue(obj, value);
+                        }
+                        catch (IndexOutOfRangeException)
+                        {
+                            propertyColumnMap.Remove(propertyId.Key);
+                        }
+                    }
+
+                    yield return obj;
+                }
             }
         }
 
         /// <summary>
         /// Executes a db command and returns a single value.
         /// </summary>
-        public static T ExecuteObject<T>(this IDbCommand command)
+        public static T ExecuteScalar<T>(this IDbCommand command)
         {
             var result = command.ExecuteScalar();
             return (result == null || result == DBNull.Value) ? default(T) : (T)result;
+        }
+
+        /// <summary>
+        /// Executes a db command and returns a single value.
+        /// </summary>
+        public static IEnumerable<DataTable> ExecuteTables(this IDbCommand command)
+        {
+            using (var dataReader = command.ExecuteReader(CommandBehavior.Default))
+            {
+                yield return BuildDataTable(dataReader);
+                while (dataReader.NextResult())
+                {
+                    yield return BuildDataTable(dataReader);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Builds a data table from data reader.
+        /// </summary>
+        private static DataTable BuildDataTable(IDataReader dataReader)
+        {
+            var dataTable = new DataTable();
+            for (var i = 0; i < dataReader.FieldCount; i++)
+            {
+                dataTable.Columns.Add(dataReader.GetName(i), dataReader.GetFieldType(i));
+            }
+            while (dataReader.Read())
+            {
+                var dataRow = dataTable.NewRow();
+                for (var i = 0; i < dataReader.FieldCount; i++)
+                {
+                    dataRow[i] = dataReader[i];
+                }
+                dataTable.Rows.Add(dataRow);
+            }
+            return dataTable;
         }
     }
 }

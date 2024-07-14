@@ -7,6 +7,7 @@ using System.Linq;
 using Wantalgh.LightDataClient;
 using System.Data.Common;
 using Wantalgh.LightDataClient.SqlDialectBuilder;
+using System.Windows.Input;
 
 namespace Wantalgh.LightDataClient
 {
@@ -33,6 +34,7 @@ namespace Wantalgh.LightDataClient
             _connectionFactory = connectionFactory;
             _dialectBuilder = dialectBuilder ?? new Tsql2005Builder();
         }
+
 
         /// <summary>
         /// Executes SQL and returns a list of T.
@@ -68,7 +70,7 @@ namespace Wantalgh.LightDataClient
         /// <returns>
         /// Sql query result, automatically mapped to IEnumerable of T
         /// </returns>
-        public IEnumerable<T> ExecuteModels<T>(string sql = null, object parameter = null, string tableName = null, int? skip = null, int? take = null, CommandType commandType = CommandType.Text, CommandBehavior commandBehavior = CommandBehavior.Default)
+        private IEnumerable<T> ExecuteObjects<T>(string sql = null, object parameter = null, string tableName = null, int? skip = null, int? take = null, CommandType commandType = CommandType.Text, CommandBehavior commandBehavior = CommandBehavior.SingleResult)
             where T : new()
         {
             if (sql == null)
@@ -96,6 +98,44 @@ namespace Wantalgh.LightDataClient
             return result;
         }
 
+
+        /// <summary>
+        /// Executes SQL and returns a list of T.
+        /// This method can execute specified or generated SQL, then automatically map column names to property names.
+        /// </summary>
+        /// <typeparam name="T">
+        /// Item type of the result list. 
+        /// Each row of the SQL result will be mapped to an instance of T, columns will be mapped to properties of T with the same name by default.
+        /// When generating SQL, T's type name will be used as table name, and each property's name will be used as column name by default.
+        /// </typeparam>
+        /// <param name="sql">
+        /// SQL to be executed. If null, this method will automatically generate SELECT SQL.
+        /// </param>
+        /// <param name="tableName">
+        /// When generating SQL, this parameter will be used as table name. If null, T's type name will be used.
+        /// </param>
+        /// <param name="parameter">
+        /// When generating SQL, this parameter will be used to generate sql query parameters.
+        /// This parameter is an object whose properties will be used to generate query parameters of the same name.
+        /// </param>
+        /// <param name="skip">
+        /// When generating SQL, if specified, this parameter will be used to skip specified number of rows.
+        /// </param>
+        /// <param name="take">
+        /// When generating SQL, if specified, this parameter will be used to limit specified number of rows.
+        /// </param>
+        /// <param name="commandType">
+        /// The type of sql to execute, if null, CommandType.Text will be used. For details, <see cref="CommandType"/>.
+        /// </param>
+        /// <returns>
+        /// Sql query result, automatically mapped to IEnumerable of T
+        /// </returns>
+        public IEnumerable<T> ExecuteModels<T>(string sql = null, object parameter = null, string tableName = null, int? skip = null, int? take = null, CommandType commandType = CommandType.Text)
+            where T : new()
+        {
+            return ExecuteObjects<T>(sql, parameter, tableName, skip, take, commandType);
+        }
+
         /// <summary>
         /// Executes SQL and returns the first row.
         /// Equivalent to ExecuteModels method, but only get the first row, other rows will be ignored. />
@@ -118,16 +158,13 @@ namespace Wantalgh.LightDataClient
         /// <param name="commandType">
         /// The type of sql to execute, if null, CommandType.Text will be used. For details, <see cref="CommandType"/>.
         /// </param>
-        /// <param name="commandBehavior">
-        /// The behavior of executing sql, if null, CommandBehavior.Default will be used. For details, <see cref="CommandBehavior"/>
-        /// </param>
         /// <returns>
         /// First row of result, automatically mapped to T
         /// </returns>
-        public T ExecuteModel<T>(string sql = null, object parameter = null, string tableName = null, CommandType commandType = CommandType.Text, CommandBehavior commandBehavior = CommandBehavior.Default)
+        public T ExecuteModel<T>(string sql = null, object parameter = null, string tableName = null, CommandType commandType = CommandType.Text)
             where T : new()
         {
-            var models = ExecuteModels<T>(sql, parameter, tableName, 0, 1, commandType, commandBehavior);
+            var models = ExecuteObjects<T>(sql, parameter, tableName, null, null, commandType, CommandBehavior.SingleRow);
             var model = models.FirstOrDefault();
             return model;
         }
@@ -151,7 +188,7 @@ namespace Wantalgh.LightDataClient
         /// <returns>
         /// The first single value of the result
         /// </returns>
-        public T ExecuteObject<T>(string sql, object parameter = null, CommandType commandType = CommandType.Text)
+        public T ExecuteScalar<T>(string sql, object parameter = null, CommandType commandType = CommandType.Text)
         {
             T result;
             using (var connection = GetConnection())
@@ -159,7 +196,7 @@ namespace Wantalgh.LightDataClient
                 connection.Open();
                 using (var command = BuildCommand(connection, sql, commandType, parameter))
                 {
-                    result = command.ExecuteObject<T>();
+                    result = command.ExecuteScalar<T>();
                 }
             }
             return result;
@@ -196,7 +233,8 @@ namespace Wantalgh.LightDataClient
         }
 
         /// <summary>
-        /// Executes SQL and returns a <see cref="DataTable"/>.
+        /// Executes SQL and returns a <see cref="DataSet"/>.
+        /// A DataSet can contain multiple tables and can query multiple results in the database.
         /// </summary>
         /// <param name="sql">
         /// SQL to be executed. 
@@ -209,22 +247,22 @@ namespace Wantalgh.LightDataClient
         /// The type of sql to execute, if null, CommandType.Text will be used. For details, <see cref="CommandType"/>.
         /// </param>
         /// <returns>
-        /// DataTable of sql query result.
+        /// DataSet of sql query result.
         /// </returns>
-        public DataTable ExecuteTable(string sql, object parameter = null, CommandType commandType = CommandType.Text)
+        public DataSet ExecuteDataSet(string sql, object parameter = null, CommandType commandType = CommandType.Text)
         {
-            var dataTable = new DataTable();
+            var dataSet = new DataSet();
             using (var connection = GetConnection())
             {
                 connection.Open();
                 using (var command = BuildCommand(connection, sql, commandType, parameter))
                 {
-                    dataTable.Load(command.ExecuteReader());
+                    var tables = command.ExecuteTables();
+                    dataSet.Tables.AddRange(tables.ToArray());
                 }
             }
-            return dataTable;
+            return dataSet;
         }
-
 
         /// <summary>
         /// Insert a row into data table using the automatic mapping logic.
@@ -367,7 +405,7 @@ namespace Wantalgh.LightDataClient
         /// Condition is an object whose properties will be used to generate WHERE clause of DELETE SQL.
         /// Setting the condition to null will generate a DELETE SQL without WHERE clause.
         /// </param>
-        /// <returns>是否删除成功。</returns>
+        /// <returns>The number of rows affected.</returns>
         public int DeleteModel(string tableName, object condition)
         {
             var conditionParamDic = GetObjectParameterDic(condition);

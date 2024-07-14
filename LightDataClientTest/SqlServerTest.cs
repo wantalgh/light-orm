@@ -102,6 +102,15 @@ namespace LightDataClientTest
                 parameter: new { Name = "name" }, commandType: CommandType.StoredProcedure);
             Assert.AreEqual(3, staffsA.Count());
 
+            var mSql = """
+                       SELECT * FROM Staff WHERE Name LIKE @SearchName 
+                       SELECT * FROM Staff2 WHERE Name LIKE @SearchName  
+                       SELECT * FROM Staff3 WHERE Name LIKE @SearchName 
+                       """;
+            // Execute sql and get multiple results in DataSet
+            DataSet staffsB = _sqlClient.ExecuteDataSet(mSql, new { SearchName = "%name%" });
+            Assert.AreEqual(3, staffsB.Tables.Count);
+
 
             // ExecuteModel() method only returns one record, equals ExecuteModels().FirstOrDefault()
             Staff staff = _sqlClient.ExecuteModel<Staff>();
@@ -110,16 +119,16 @@ namespace LightDataClientTest
 
 
         [TestMethod]
-        public void TestExecuteObject()
+        public void TestExecuteScalar()
         {
             InitTestData();
 
             //Execute sql and return an int result
-            var count = _sqlClient.ExecuteObject<int>("SELECT COUNT(*) FROM [Staff3]");
+            var count = _sqlClient.ExecuteScalar<int>("SELECT COUNT(*) FROM [Staff3]");
             Assert.AreEqual(3, count);
 
             //Execute sql and return a datetime result
-            var now = _sqlClient.ExecuteObject<DateTime>("SELECT GETDATE()");
+            var now = _sqlClient.ExecuteScalar<DateTime>("SELECT GETDATE()");
             Assert.IsNotNull(now);
         }
 
@@ -173,7 +182,7 @@ namespace LightDataClientTest
                       INSERT INTO [Staff3] ([Id], [Name], [Entry_Date]) VALUES (@Id , @Name, @Date)
                       SELECT @Id
                       """;
-            var identity = _sqlClient.ExecuteObject<Guid>(sql, new { Name = "name", Date = DateTime.Now });
+            var identity = _sqlClient.ExecuteScalar<Guid>(sql, new { Name = "name", Date = DateTime.Now });
             Assert.IsNotNull(identity);
         }
 
@@ -183,7 +192,7 @@ namespace LightDataClientTest
         {
             InitTestData();
 
-            var count1 = _sqlClient.ExecuteObject<int>("SELECT COUNT(*) FROM [Staff3]");
+            var count1 = _sqlClient.ExecuteScalar<int>("SELECT COUNT(*) FROM [Staff3]");
             using (var scope = new TransactionScope())
             {
                 // Add one row
@@ -202,7 +211,7 @@ namespace LightDataClientTest
 
                 scope.Complete();
             }
-            var count2 = _sqlClient.ExecuteObject<int>("SELECT COUNT(*) FROM [Staff3]");
+            var count2 = _sqlClient.ExecuteScalar<int>("SELECT COUNT(*) FROM [Staff3]");
             Assert.AreEqual(2, count2 - count1);
         }
 

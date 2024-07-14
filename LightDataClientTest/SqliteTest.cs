@@ -98,6 +98,16 @@ namespace LightDataClientTest
             Assert.AreEqual(3, trainees9.Count());
 
 
+            // Execute sql and get results in DataSet
+            var mSql = """
+                       SELECT * FROM Trainee WHERE Name LIKE @SearchName;
+                       SELECT * FROM Trainee2 WHERE Name LIKE @SearchName;
+                       SELECT * FROM Trainee3 WHERE Name LIKE @SearchName;
+                       """;
+            DataSet traineesA = _sqliteClient.ExecuteDataSet(mSql, new { SearchName = "%name%" });
+            Assert.AreEqual(3, traineesA.Tables.Count);
+
+
             // ExecuteModel() method only returns one record, equals ExecuteModels().FirstOrDefault()
             Trainee trainee = _sqliteClient.ExecuteModel<Trainee>();
             Assert.IsNotNull(trainee);
@@ -105,16 +115,16 @@ namespace LightDataClientTest
 
 
         [TestMethod]
-        public void TestExecuteObject()
+        public void TestExecuteScalar()
         {
             InitTestData();
 
             //Execute sql and return an long result
-            var count = _sqliteClient.ExecuteObject<long>("SELECT COUNT(*) FROM Trainee");
+            var count = _sqliteClient.ExecuteScalar<long>("SELECT COUNT(*) FROM Trainee");
             Assert.AreEqual(3, count);
 
             //Execute sql and return a string result
-            var now = _sqliteClient.ExecuteObject<string>("SELECT datetime('now')");
+            var now = _sqliteClient.ExecuteScalar<string>("SELECT datetime('now')");
             Assert.IsNotNull(now);
         }
 
@@ -160,7 +170,7 @@ namespace LightDataClientTest
                       INSERT INTO Trainee3 (Name, Alter_Name, Birth_Date) VALUES (@Name , @Name2, @Date);
                       SELECT last_insert_rowid()
                       """;
-            var id = _sqliteClient.ExecuteObject<long>(sql, new { Name = "name", Name2 = "name2", Date = DateTime.Now.ToString("s") });
+            var id = _sqliteClient.ExecuteScalar<long>(sql, new { Name = "name", Name2 = "name2", Date = DateTime.Now.ToString("s") });
             Assert.IsNotNull(id);
         }
 
@@ -170,7 +180,7 @@ namespace LightDataClientTest
         {
             InitTestData();
 
-            var count1 = _sqliteClient.ExecuteObject<long>("SELECT COUNT(*) FROM [Trainee3]");
+            var count1 = _sqliteClient.ExecuteScalar<long>("SELECT COUNT(*) FROM [Trainee3]");
 
             var sql = """
                       BEGIN TRANSACTION;
@@ -182,7 +192,7 @@ namespace LightDataClientTest
                       """;
             _sqliteClient.ExecuteNone(sql);
 
-            var count2 = _sqliteClient.ExecuteObject<long>("SELECT COUNT(*) FROM [Trainee3]");
+            var count2 = _sqliteClient.ExecuteScalar<long>("SELECT COUNT(*) FROM [Trainee3]");
             Assert.AreEqual(2, count2 - count1);
         }
 
