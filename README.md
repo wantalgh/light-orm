@@ -10,7 +10,7 @@ To make Light-ORM simple and easy to use, the tool adopts a lightweight design w
 - The tool is easy to understand and extend. Because of its lightweight nature, the tool itself consists of only a few simple classes, without complex process logic and using an extensible design, users can customize their own SQL generation logic and data mapping rules as needed.
 
 **Instructions:** https://github.com/wantalgh/light-orm/wiki  
-**API Documentation** https://github.com/wantalgh/light-orm/wiki/API  
+**API Documentation:** https://github.com/wantalgh/light-orm/wiki/API  
 
 **中文说明：** https://github.com/wantalgh/light-orm/wiki/%E4%B8%AD%E6%96%87%E8%AF%B4%E6%98%8E  
 **接口文档：** https://github.com/wantalgh/light-orm/wiki/%E6%8E%A5%E5%8F%A3%E6%96%87%E6%A1%A3
